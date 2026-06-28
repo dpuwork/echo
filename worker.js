@@ -4,8 +4,11 @@ export default {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, X-Sleep-For",
+      "Access-Control-Expose-Headers": "X-LLM-Duration-Ms",
       "Access-Control-Max-Age": "86400",
     };
+
+    const url = new URL(request.url);
 
     if (request.method === "OPTIONS") {
       return new Response(null, {
@@ -24,16 +27,63 @@ export default {
     }
 
     if (request.method === "POST") {
-      const sleep = parseInt(request.headers.get("X-Sleep-For") || "0", 10);
-      if (sleep > 0) {
-        await new Promise(r => setTimeout(r, sleep));
+      if (url.pathname === "/v1/chat/completions") {
+        try {
+          const payload = await request.json();
+          
+          const startTime = Date.now();
+          const llmResponse = await fetch("https://opencode.ai/zen/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+          const endTime = Date.now();
+          const duration = endTime - startTime;
+
+          if (!llmResponse.ok) {
+            const errText = await llmResponse.text();
+            return new Response(JSON.stringify({ error: `LLM Endpoint Error: ${llmResponse.status}`, details: errText }), {
+              status: llmResponse.status,
+              headers: {
+                "Content-Type": "application/json",
+                "X-LLM-Duration-Ms": duration.toString(),
+                ...corsHeaders
+              }
+            });
+          }
+
+          const data = await llmResponse.json();
+          return new Response(JSON.stringify(data), {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              "X-LLM-Duration-Ms": duration.toString(),
+              ...corsHeaders
+            }
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ error: `Internal Proxy Error: ${error.message}` }), {
+            status: 500,
+            headers: {
+              "Content-Type": "application/json",
+              ...corsHeaders
+            }
+          });
+        }
+      } else {
+        const sleep = parseInt(request.headers.get("X-Sleep-For") || "0", 10);
+        if (sleep > 0) {
+          await new Promise(r => setTimeout(r, sleep));
+        }
+        return new Response(JSON.stringify({ ok: true, processedAt: Date.now() }), {
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          },
+        });
       }
-      return new Response(JSON.stringify({ ok: true, processedAt: Date.now() }), {
-        headers: { 
-          "Content-Type": "application/json",
-          ...corsHeaders
-        },
-      });
     }
 
     return new Response("Method not allowed", { 
@@ -49,7 +99,7 @@ function getHTMLContent() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>dpuwork.com // network-latency-tester</title>
+    <title>dpuwork.com // http-latency-tester</title>
     <style>
         :root {
             --bg: #ffffff;
@@ -60,7 +110,8 @@ function getHTMLContent() {
             --btn-bg: #000000;
             --btn-text: #ffffff;
             --btn-hover: #333333;
-            --accent: #007700;
+            --accent: #51ff00;
+            --arrow-svg: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
         }
         @media (prefers-color-scheme: dark) {
             :root {
@@ -72,7 +123,8 @@ function getHTMLContent() {
                 --btn-bg: #ffffff;
                 --btn-text: #000000;
                 --btn-hover: #cccccc;
-                --accent: #00ff00;
+                --accent: #51ff00;
+                --arrow-svg: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
             }
         }
         body { 
@@ -85,7 +137,7 @@ function getHTMLContent() {
             line-height: 1.5;
         }
         .header {
-            margin-bottom: 32px;
+            margin-bottom: 24px;
             border-bottom: 1px solid var(--border);
             padding-bottom: 16px;
         }
@@ -97,6 +149,36 @@ function getHTMLContent() {
         .header-links {
             font-size: 0.85rem;
             color: var(--subtext);
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+            gap: 16px;
+        }
+        .tab {
+            padding: 8px 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: var(--subtext);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            font-weight: bold;
+            transition: all 0.15s ease;
+        }
+        .tab.active {
+            color: var(--text);
+            border-bottom: 2px solid var(--accent);
+        }
+        .tab:hover {
+            color: var(--text);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
         }
         .container {
             background: var(--card-bg);
@@ -128,7 +210,7 @@ function getHTMLContent() {
             margin-bottom: 6px;
             text-transform: uppercase;
         }
-        input, select {
+        input, select, textarea {
             width: 100%;
             background: var(--bg);
             border: 1px solid var(--border);
@@ -137,6 +219,19 @@ function getHTMLContent() {
             border-radius: 4px;
             font-family: inherit;
             box-sizing: border-box;
+        }
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: var(--arrow-svg);
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 18px;
+            padding-right: 36px;
+        }
+        textarea {
+            resize: vertical;
         }
         button {
             width: 100%;
@@ -189,6 +284,18 @@ function getHTMLContent() {
             max-height: 220px;
             overflow-y: auto;
             color: var(--subtext);
+            white-space: pre-wrap;
+        }
+        .output-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 14px;
+            font-size: 0.85rem;
+            color: var(--text);
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 400px;
         }
         .log-line {
             padding: 4px 0;
@@ -205,62 +312,173 @@ function getHTMLContent() {
 <body>
 
 <div class="header">
-    <h1>dpuwork.com // network-latency-tester</h1>
+    <h1>dpuwork.com // http-latency-tester</h1>
     <div class="header-links">
-        <span>active metrics</span> · <span>zero dependencies</span>
+        <span>active metrics</span> · <span>zero dependencies</span> · <span>llm gateway</span>
     </div>
 </div>
 
-<div class="container">
-    <div class="section-title">configuration</div>
-    
-    <div class="form-grid">
+<div class="tabs">
+    <div class="tab active" id="tab-network" onclick="switchTab('network')">HTTP Benchmark</div>
+    <div class="tab" id="tab-llm" onclick="switchTab('llm')">LLM Gateway</div>
+</div>
+
+<!-- Tab: HTTP Benchmark -->
+<div id="content-network" class="tab-content active">
+    <div class="container">
+        <div class="section-title">configuration</div>
+        
+        <div class="form-grid">
+            <div class="form-row">
+                <label for="testCount">sample iterations</label>
+                <select id="testCount">
+                    <option value="5">5 CYCLES</option>
+                    <option value="10" selected>10 CYCLES</option>
+                    <option value="20">20 CYCLES</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label for="sleepInput">server delay (ms)</label>
+                <input type="number" id="sleepInput" value="0" min="0">
+            </div>
+        </div>
+
+        <div class="form-row" style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="useRelayCheck" style="width: auto; margin: 0;">
+            <label for="useRelayCheck" style="margin-bottom: 0; cursor: pointer; text-transform: uppercase; font-size: 0.8rem;">use relay proxy</label>
+        </div>
+
+        <div id="proxyUrlContainer" class="form-row" style="display: none; margin-top: 16px;">
+            <label for="proxyUrl">relay proxy prefix url</label>
+            <input type="text" id="proxyUrl" value="https://relay.dpuwork.com/" placeholder="e.g. https://relay.dpuwork.com/">
+        </div>
+
+        <button id="runTestBtn" style="margin-top: 16px;">run benchmark</button>
+    </div>
+
+    <div class="container">
+        <div class="section-title">telemetry results</div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">transit avg</div>
+                <div class="stat-value" id="avgTransit">-- ms</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">transit median</div>
+                <div class="stat-value" id="medianTransit">-- ms</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">rtt avg</div>
+                <div class="stat-value meta" id="avgRtt">-- ms</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="section-title">execution logs [status: <span id="progress" style="color: var(--text);">0/0</span>]</div>
+        <div class="log-box" id="output">SYSTEM_READY: Awaiting execution orders...</div>
+    </div>
+</div>
+
+<!-- Tab: LLM Gateway -->
+<div id="content-llm" class="tab-content">
+    <div class="container">
+        <div class="section-title">LLM Configuration</div>
+        
+        <div class="form-grid">
+            <div class="form-row">
+                <label for="llmModel">model</label>
+                <select id="llmModel">
+                    <option value="nemotron-3-ultra-free" selected>nemotron-3-ultra-free</option>
+                    <option value="deepseek-v4-flash-free">deepseek-v4-flash-free</option>
+                    <option value="mimo-v2.5-free">mimo-v2.5-free</option>
+                    <option value="north-mini-code-free">north-mini-code-free</option>
+                    <option value="big-pickle">big-pickle</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label for="llmRoute">connection mode</label>
+                <select id="llmRoute">
+                    <option value="local" selected>local</option>
+                    <option value="proxy">proxy</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="llmProxyContainer" class="form-row" style="display: none;">
+            <label for="llmProxyUrl">llm proxy prefix url</label>
+            <input type="text" id="llmProxyUrl" value="https://relay.dpuwork.com" placeholder="e.g. https://relay.dpuwork.com">
+        </div>
+
         <div class="form-row">
-            <label for="testCount">sample iterations</label>
-            <select id="testCount">
-                <option value="5">5 CYCLES</option>
-                <option value="10" selected>10 CYCLES</option>
-                <option value="20">20 CYCLES</option>
-            </select>
+            <label for="llmPrompt">Prompt / query</label>
+            <textarea id="llmPrompt" rows="3">Explain quantum computing in one sentence.</textarea>
         </div>
-        <div class="form-row">
-            <label for="sleepInput">server delay (ms)</label>
-            <input type="number" id="sleepInput" value="0" min="0">
+
+        <button id="runLlmBtn">Run LLM Query & Measure Latency</button>
+    </div>
+
+    <div class="container">
+        <div class="section-title">LLM Telemetry Results</div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">total RTT</div>
+                <div class="stat-value" id="llmDuration">-- ms</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">llm engine / processing</div>
+                <div class="stat-value" id="llmProcessTime">-- ms</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">relay overhead</div>
+                <div class="stat-value meta" id="llmOverhead">-- ms</div>
+            </div>
         </div>
     </div>
 
-    <div class="form-row">
-        <label for="proxyUrl">relay proxy prefix url (optional)</label>
-        <input type="text" id="proxyUrl" placeholder="e.g. https://cors-anywhere.herokuapp.com/">
+    <div class="container" id="llmReasoningContainer" style="display: none;">
+        <div class="section-title">Thought Process (Reasoning)</div>
+        <div class="output-box" id="llmReasoningBox" style="color: var(--subtext); font-style: italic;"></div>
     </div>
 
-    <button id="runTestBtn">run benchmark</button>
-</div>
-
-<div class="container">
-    <div class="section-title">telemetry results</div>
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-label">transit avg</div>
-            <div class="stat-value" id="avgTransit">-- ms</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">transit median</div>
-            <div class="stat-value" id="medianTransit">-- ms</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">rtt avg</div>
-            <div class="stat-value meta" id="avgRtt">-- ms</div>
-        </div>
+    <div class="container">
+        <div class="section-title">Response Content</div>
+        <div class="output-box" id="llmResponseBox">Awaiting query...</div>
     </div>
-</div>
 
-<div class="container">
-    <div class="section-title">execution logs [status: <span id="progress" style="color: var(--text);">0/0</span>]</div>
-    <div class="log-box" id="output">SYSTEM_READY: Awaiting execution orders...</div>
+    <div class="container">
+        <div class="section-title">Proxy Execution Logs</div>
+        <div class="log-box" id="llmLogBox">SYSTEM_READY: LLM testing client loaded.</div>
+    </div>
 </div>
 
 <script>
+    // Tab switching logic
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(\`tab-\${tabId}\`).classList.add('active');
+        document.getElementById(\`content-\${tabId}\`).classList.add('active');
+    }
+
+    // Toggle relay proxy visibility under HTTP Benchmark
+    const useRelayCheck = document.getElementById('useRelayCheck');
+    const proxyUrlContainer = document.getElementById('proxyUrlContainer');
+    
+    useRelayCheck.addEventListener('change', () => {
+        proxyUrlContainer.style.display = useRelayCheck.checked ? 'block' : 'none';
+    });
+
+    // Toggle LLM proxy visibility under LLM Gateway
+    const llmRouteSelect = document.getElementById('llmRoute');
+    const llmProxyContainer = document.getElementById('llmProxyContainer');
+    
+    llmRouteSelect.addEventListener('change', () => {
+        llmProxyContainer.style.display = llmRouteSelect.value === 'proxy' ? 'block' : 'none';
+    });
+
+    // Original Network Benchmark Logic
     const getAverage = arr => arr.reduce((p, c) => p + c, 0) / arr.length;
     const getMedian = arr => {
         const s = [...arr].sort((a, b) => a - b);
@@ -282,9 +500,10 @@ function getHTMLContent() {
         const totalTests = parseInt(document.getElementById('testCount').value, 10);
         const sleepTime = parseInt(document.getElementById('sleepInput').value, 10) || 0;
         
-        const proxyPrefix = document.getElementById('proxyUrl').value.trim();
+        const useRelay = useRelayCheck.checked;
+        const proxyPrefix = useRelay ? document.getElementById('proxyUrl').value.trim() : '';
         let targetUrl = window.location.origin + window.location.pathname;
-        if (proxyPrefix) {
+        if (useRelay && proxyPrefix) {
             targetUrl = proxyPrefix + targetUrl;
         }
 
@@ -335,6 +554,122 @@ function getHTMLContent() {
         }
 
         btn.disabled = false;
+    });
+
+    // LLM Gateway Benchmark Logic
+    document.getElementById('runLlmBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('runLlmBtn');
+        const modelSelect = document.getElementById('llmModel');
+        const routeSelect = document.getElementById('llmRoute');
+        const promptArea = document.getElementById('llmPrompt');
+        
+        const durationEl = document.getElementById('llmDuration');
+        const processTimeEl = document.getElementById('llmProcessTime');
+        const overheadEl = document.getElementById('llmOverhead');
+        
+        const reasoningBox = document.getElementById('llmReasoningBox');
+        const reasoningContainer = document.getElementById('llmReasoningContainer');
+        const responseBox = document.getElementById('llmResponseBox');
+        const logBox = document.getElementById('llmLogBox');
+
+        btn.disabled = true;
+        logBox.innerHTML = "SYSTEM_STATUS: Initiating LLM query...";
+        reasoningContainer.style.display = 'none';
+        reasoningBox.textContent = '';
+        responseBox.textContent = 'Streaming response...';
+        
+        durationEl.textContent = '-- ms';
+        processTimeEl.textContent = '-- ms';
+        overheadEl.textContent = '-- ms';
+
+        const model = modelSelect.value;
+        const route = routeSelect.value;
+        const prompt = promptArea.value.trim();
+
+        const payload = {
+            model: model,
+            messages: [
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ],
+            temperature: 0.7
+        };
+
+        let targetUrl = window.location.origin + "/v1/chat/completions";
+        if (route === 'proxy') {
+            let prefix = document.getElementById('llmProxyUrl').value.trim();
+            if (prefix) {
+                if (prefix.endsWith('/')) {
+                    prefix = prefix.slice(0, -1);
+                }
+                targetUrl = prefix + "/v1/chat/completions";
+            }
+        }
+
+        const startTime = Date.now();
+        try {
+            logBox.innerHTML += \`\\nConnecting to \${targetUrl} via connection mode \${route.toUpperCase()}...\`;
+            
+            const response = await fetch(targetUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const endTime = Date.now();
+            const totalRtt = endTime - startTime;
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(\`HTTP \${response.status}: \${errText}\`);
+            }
+
+            const data = await response.json();
+            logBox.innerHTML += "\\nResponse received successfully! Processing telemetry...";
+
+            if (!data.choices || data.choices.length === 0 || !data.choices[0].message) {
+                throw new Error(\`Unexpected API Response Format: \${JSON.stringify(data)}\`);
+            }
+
+            const content = data.choices[0].message.content;
+            const reasoning = data.choices[0].message.reasoning;
+
+            // Update boxes
+            responseBox.textContent = content || "(Empty response content)";
+            if (reasoning) {
+                reasoningContainer.style.display = 'block';
+                reasoningBox.textContent = reasoning;
+            }
+
+            // Extract telemetry
+            let serverDuration = null;
+            const durationHeader = response.headers.get('X-LLM-Duration-Ms');
+            if (durationHeader) {
+                serverDuration = parseInt(durationHeader, 10);
+            }
+
+            durationEl.textContent = \`\${totalRtt} ms\`;
+            if (serverDuration !== null) {
+                processTimeEl.textContent = \`\${serverDuration} ms\`;
+                const overhead = Math.max(0, totalRtt - serverDuration);
+                overheadEl.textContent = \`\${overhead} ms\`;
+                logBox.innerHTML += \`\\nTelemetry: Total RTT=\${totalRtt}ms | LLM Engine=\${serverDuration}ms | Relay Overhead=\${overhead}ms\`;
+            } else {
+                processTimeEl.textContent = 'N/A';
+                overheadEl.textContent = 'N/A';
+                logBox.innerHTML += \`\\nTelemetry: Total RTT=\${totalRtt}ms (Server processing time header not available for direct/proxy calls without custom headers)\`;
+            }
+
+        } catch (error) {
+            logBox.innerHTML += \`\\nERROR: \${error.message}\`;
+            responseBox.textContent = \`Error details:\\n\${error.message}\`;
+        } finally {
+            btn.disabled = false;
+        }
     });
 </script>
 
