@@ -313,9 +313,6 @@ function getHTMLContent() {
 
 <div class="header">
     <h1>dpuwork.com // http-latency-tester</h1>
-    <div class="header-links">
-        <span>active metrics</span> · <span>zero dependencies</span> · <span>llm gateway</span>
-    </div>
 </div>
 
 <div class="tabs">
@@ -326,57 +323,57 @@ function getHTMLContent() {
 <!-- Tab: HTTP Benchmark -->
 <div id="content-network" class="tab-content active">
     <div class="container">
-        <div class="section-title">configuration</div>
+        <div class="section-title">Configuration</div>
         
         <div class="form-grid">
             <div class="form-row">
-                <label for="testCount">sample iterations</label>
+                <label for="testCount">Test Cycles</label>
                 <select id="testCount">
-                    <option value="5">5 CYCLES</option>
-                    <option value="10" selected>10 CYCLES</option>
-                    <option value="20">20 CYCLES</option>
+                    <option value="5">5 Cycles</option>
+                    <option value="10" selected>10 Cycles</option>
+                    <option value="20">20 Cycles</option>
                 </select>
             </div>
             <div class="form-row">
-                <label for="sleepInput">server delay (ms)</label>
+                <label for="sleepInput">Simulate server delay (ms)</label>
                 <input type="number" id="sleepInput" value="0" min="0">
             </div>
         </div>
 
         <div class="form-row" style="display: flex; align-items: center; gap: 8px;">
             <input type="checkbox" id="useRelayCheck" style="width: auto; margin: 0;">
-            <label for="useRelayCheck" style="margin-bottom: 0; cursor: pointer; text-transform: uppercase; font-size: 0.8rem;">use relay proxy</label>
+            <label for="useRelayCheck" style="margin-bottom: 0; cursor: pointer; text-transform: uppercase; font-size: 0.8rem;">Use Relay Proxy</label>
         </div>
 
         <div id="proxyUrlContainer" class="form-row" style="display: none; margin-top: 16px;">
-            <label for="proxyUrl">relay proxy prefix url</label>
+            <label for="proxyUrl">Relay Proxy URL</label>
             <input type="text" id="proxyUrl" value="https://relay.dpuwork.com/" placeholder="e.g. https://relay.dpuwork.com/">
         </div>
 
-        <button id="runTestBtn" style="margin-top: 16px;">run benchmark</button>
+        <button id="runTestBtn" style="margin-top: 16px;">Run Benchmark</button>
     </div>
 
     <div class="container">
-        <div class="section-title">telemetry results</div>
+        <div class="section-title">Delay results</div>
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-label">transit avg</div>
+                <div class="stat-label">Average Transit</div>
                 <div class="stat-value" id="avgTransit">-- ms</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">transit median</div>
+                <div class="stat-label">Median Transit</div>
                 <div class="stat-value" id="medianTransit">-- ms</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">rtt avg</div>
+                <div class="stat-label">Average RTT</div>
                 <div class="stat-value meta" id="avgRtt">-- ms</div>
             </div>
         </div>
     </div>
 
     <div class="container">
-        <div class="section-title">execution logs [status: <span id="progress" style="color: var(--text);">0/0</span>]</div>
-        <div class="log-box" id="output">SYSTEM_READY: Awaiting execution orders...</div>
+        <div class="section-title">Execution Logs [Status: <span id="progress" style="color: var(--text);">0/0</span>]</div>
+        <div class="log-box" id="output">Ready to run benchmark.</div>
     </div>
 </div>
 
@@ -387,50 +384,50 @@ function getHTMLContent() {
         
         <div class="form-grid">
             <div class="form-row">
-                <label for="llmModel">model</label>
+                <label for="llmModel">Model</label>
                 <select id="llmModel">
-                    <option value="nemotron-3-ultra-free" selected>nemotron-3-ultra-free</option>
-                    <option value="deepseek-v4-flash-free">deepseek-v4-flash-free</option>
-                    <option value="mimo-v2.5-free">mimo-v2.5-free</option>
-                    <option value="north-mini-code-free">north-mini-code-free</option>
-                    <option value="big-pickle">big-pickle</option>
+                    <option value="nemotron-3-ultra-free" selected>Nemotron 3 Ultra (Free)</option>
+                    <option value="deepseek-v4-flash-free">DeepSeek V4 Flash (Free)</option>
+                    <option value="mimo-v2.5-free">Mimo v2.5 (Free)</option>
+                    <option value="north-mini-code-free">North Mini Code (Free)</option>
+                    <option value="big-pickle">Big Pickle</option>
                 </select>
             </div>
             <div class="form-row">
-                <label for="llmRoute">connection mode</label>
+                <label for="llmRoute">Connection Mode</label>
                 <select id="llmRoute">
-                    <option value="local" selected>local</option>
-                    <option value="proxy">proxy</option>
+                    <option value="local" selected>Direct (Local)</option>
+                    <option value="proxy">Relay Proxy</option>
                 </select>
             </div>
         </div>
 
         <div id="llmProxyContainer" class="form-row" style="display: none;">
-            <label for="llmProxyUrl">llm proxy prefix url</label>
+            <label for="llmProxyUrl">LLM Proxy URL</label>
             <input type="text" id="llmProxyUrl" value="https://relay.dpuwork.com" placeholder="e.g. https://relay.dpuwork.com">
         </div>
 
         <div class="form-row">
-            <label for="llmPrompt">Prompt / query</label>
+            <label for="llmPrompt">Prompt</label>
             <textarea id="llmPrompt" rows="3">Explain quantum computing in one sentence.</textarea>
         </div>
 
-        <button id="runLlmBtn">Run LLM Query & Measure Latency</button>
+        <button id="runLlmBtn">Run LLM Query</button>
     </div>
 
     <div class="container">
-        <div class="section-title">LLM Telemetry Results</div>
+        <div class="section-title">LLM delay results</div>
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-label">total RTT</div>
+                <div class="stat-label">Total RTT</div>
                 <div class="stat-value" id="llmDuration">-- ms</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">llm engine / processing</div>
+                <div class="stat-label">LLM Engine Processing</div>
                 <div class="stat-value" id="llmProcessTime">-- ms</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">relay overhead</div>
+                <div class="stat-label">Relay Overhead</div>
                 <div class="stat-value meta" id="llmOverhead">-- ms</div>
             </div>
         </div>
@@ -447,8 +444,8 @@ function getHTMLContent() {
     </div>
 
     <div class="container">
-        <div class="section-title">Proxy Execution Logs</div>
-        <div class="log-box" id="llmLogBox">SYSTEM_READY: LLM testing client loaded.</div>
+        <div class="section-title">Execution Logs</div>
+        <div class="log-box" id="llmLogBox">Ready to run LLM query.</div>
     </div>
 </div>
 
@@ -515,7 +512,7 @@ function getHTMLContent() {
             
             const logLine = document.createElement('div');
             logLine.className = 'log-line';
-            logLine.innerHTML = \`<span class="log-idx">[CYCLE \${i + 1}/\${totalTests}]</span> <span>PINGING...</span>\`;
+            logLine.innerHTML = \`<span class="log-idx">[Cycle \${i + 1}/\${totalTests}]</span> <span>Pinging...</span>\`;
             out.appendChild(logLine);
             out.scrollTop = out.scrollHeight;
 
@@ -537,9 +534,9 @@ function getHTMLContent() {
                 rttTimes.push(rtt);
                 transitTimes.push(transit);
 
-                logLine.innerHTML = \`<span class="log-idx">[CYCLE \${i + 1}/\${totalTests}]</span> <span class="log-rtt">RTT: \${rtt}ms</span> <span class="log-transit">TRANSIT: \${transit}ms</span>\`;
+                logLine.innerHTML = \`<span class="log-idx">[Cycle \${i + 1}/\${totalTests}]</span> <span class="log-rtt">RTT: \${rtt}ms</span> <span class="log-transit">Transit: \${transit}ms</span>\`;
             } catch (err) {
-                logLine.innerHTML = \`<span class="log-idx">[CYCLE \${i + 1}/\${totalTests}]</span> <span style="color: #ff0000;">ERROR: \${err.message.toUpperCase()}</span>\`;
+                logLine.innerHTML = \`<span class="log-idx">[Cycle \${i + 1}/\${totalTests}]</span> <span style="color: #ff0000;">Error: \${err.message}</span>\`;
             }
 
             await new Promise(r => setTimeout(r, 100));
@@ -550,7 +547,7 @@ function getHTMLContent() {
             medianTransitEl.textContent = \`\${getMedian(transitTimes).toFixed(1)} ms\`;
             avgRttEl.textContent = \`\${getAverage(rttTimes).toFixed(1)} ms\`;
         } else {
-            out.textContent = "EXECUTION_FAILURE: All iterations dropped.";
+            out.textContent = "Execution failure: All cycles failed.";
         }
 
         btn.disabled = false;
@@ -573,7 +570,7 @@ function getHTMLContent() {
         const logBox = document.getElementById('llmLogBox');
 
         btn.disabled = true;
-        logBox.innerHTML = "SYSTEM_STATUS: Initiating LLM query...";
+        logBox.innerHTML = "Initiating LLM query...";
         reasoningContainer.style.display = 'none';
         reasoningBox.textContent = '';
         responseBox.textContent = 'Streaming response...';
@@ -610,7 +607,7 @@ function getHTMLContent() {
 
         const startTime = Date.now();
         try {
-            logBox.innerHTML += \`\\nConnecting to \${targetUrl} via connection mode \${route.toUpperCase()}...\`;
+            logBox.innerHTML += \`\\nConnecting to \${targetUrl} via \${route.toUpperCase()}...\`;
             
             const response = await fetch(targetUrl, {
                 method: "POST",
@@ -629,7 +626,7 @@ function getHTMLContent() {
             }
 
             const data = await response.json();
-            logBox.innerHTML += "\\nResponse received successfully! Processing telemetry...";
+            logBox.innerHTML += "\\nResponse received. Processing telemetry...";
 
             if (!data.choices || data.choices.length === 0 || !data.choices[0].message) {
                 throw new Error(\`Unexpected API Response Format: \${JSON.stringify(data)}\`);
@@ -657,15 +654,15 @@ function getHTMLContent() {
                 processTimeEl.textContent = \`\${serverDuration} ms\`;
                 const overhead = Math.max(0, totalRtt - serverDuration);
                 overheadEl.textContent = \`\${overhead} ms\`;
-                logBox.innerHTML += \`\\nTelemetry: Total RTT=\${totalRtt}ms | LLM Engine=\${serverDuration}ms | Relay Overhead=\${overhead}ms\`;
+                logBox.innerHTML += \`\\nTelemetry: Total RTT = \${totalRtt}ms, LLM Engine = \${serverDuration}ms, Relay Overhead = \${overhead}ms\`;
             } else {
                 processTimeEl.textContent = 'N/A';
                 overheadEl.textContent = 'N/A';
-                logBox.innerHTML += \`\\nTelemetry: Total RTT=\${totalRtt}ms (Server processing time header not available for direct/proxy calls without custom headers)\`;
+                logBox.innerHTML += \`\\nTelemetry: Total RTT = \${totalRtt}ms (X-LLM-Duration-Ms header not present)\`;
             }
 
         } catch (error) {
-            logBox.innerHTML += \`\\nERROR: \${error.message}\`;
+            logBox.innerHTML += \`\\nError: \${error.message}\`;
             responseBox.textContent = \`Error details:\\n\${error.message}\`;
         } finally {
             btn.disabled = false;
